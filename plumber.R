@@ -1,5 +1,7 @@
-renv::init()
-renv::install("plumber")
-renv::install("mirai")
-Y
-renv::snapshot()
+# section: ----------------------------------
+source("global.R")
+# section: ----------------------------------
+main_file <- "routes/main_routes.R"
+
+plumb(main_file) |>
+  pr_run(port = 8000)
