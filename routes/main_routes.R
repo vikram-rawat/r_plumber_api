@@ -1,7 +1,7 @@
 # plumber.R
 
 #* Echo back the input
-#* @param msg The message to echo
+#* @serializer csv
 #* @get /echo
 return_msg
 

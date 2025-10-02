@@ -1,6 +1,6 @@
 return_msg <- function() {
   main_dt <- list()
-  for (i in 1:1e6) {
+  for (i in 1:1e5) {
     main_dt[[i]] <- iris
   }
 
