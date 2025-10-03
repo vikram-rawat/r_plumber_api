@@ -14,4 +14,4 @@ plumb(main_file) |>
       message("mirai daemons stopped.")
     }
   ) |>
-  pr_run(port = 8000)
+  pr_run(port = 3838)
