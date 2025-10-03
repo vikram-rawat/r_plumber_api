@@ -1,7 +1,7 @@
 # section: ----------------------------------
-source("api/global.R")
+source("global.R")
 # section: ----------------------------------
-main_file <- "routes/main_routes.R"
+main_file <- "api/routes/main_routes.R"
 
 plumb(main_file) |>
   pr_set_debug(TRUE) |>
