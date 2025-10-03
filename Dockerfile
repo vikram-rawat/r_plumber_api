@@ -1,5 +1,17 @@
 FROM ixpantia/faucet:r4.5
 
+# Install linux dependencies for R packages
+RUN apt-get update && apt-get install -y \
+  libssl-dev \
+  libxml2-dev \
+  libcurl4-openssl-dev \
+  build-essential \
+  cmake \
+  pkg-config \
+  libmbedtls-dev \
+  ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
 # Some environment variables to tell `renv`
 # to install packages in the correct location
 # and without unnecessary symlinks
