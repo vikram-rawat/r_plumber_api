@@ -1,0 +1,6 @@
+# Demonstration of how to serve a Plumber API
+[[route]]
+route = "/api/"
+workers = 1
+server_type = "Plumber"
+workdir = "./api"

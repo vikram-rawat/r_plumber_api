@@ -1,5 +1,5 @@
 # section: ----------------------------------
-source("global.R")
+source("api/global.R")
 # section: ----------------------------------
 main_file <- "api/routes/main_routes.R"
 
@@ -14,4 +14,4 @@ plumb(main_file) |>
       message("mirai daemons stopped.")
     }
   ) |>
-  pr_run(port = 8000)
+  pr_run(port = 3838)

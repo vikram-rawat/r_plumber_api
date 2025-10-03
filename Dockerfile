@@ -24,11 +24,6 @@ COPY . .
 # You install the packages
 RUN Rscript -e "renv::restore()"
 
-# Copy the app/API files in this case replace
-# `app.R` with `plumber.R` if you are using a
-# Plumber API
-COPY ./plumber.R .
-
 # You can run the container as a non-root user
 # for security reasons if we want to though
 # this is not necessary. You could ignore this
