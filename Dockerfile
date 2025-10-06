@@ -24,6 +24,9 @@ COPY . .
 # You install the packages
 RUN Rscript -e "renv::restore()"
 
+# expose the port
+EXPOSE 3838
+
 # You can run the container as a non-root user
 # for security reasons if we want to though
 # this is not necessary. You could ignore this
