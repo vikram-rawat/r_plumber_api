@@ -1,5 +1,5 @@
 # # section: ----------------------------------
-source("api/global.R")
+# source("api/global.R")
 # # section: ----------------------------------
 # main_file <- "api/routes/main_routes.R"
 
@@ -22,4 +22,13 @@ source("api/global.R")
 #* Echo back the input
 #* @serializer csv
 #* @get /echo1
-return_msg
+function() {
+  main_dt <- list()
+  for (i in 1:1e3) {
+    main_dt[[i]] <- iris
+  }
+
+  result <- data.table::rbindlist(main_dt)
+
+  return(result)
+}
