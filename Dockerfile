@@ -1,5 +1,11 @@
 FROM ixpantia/faucet:r4.5
 
+# Some environment variables to tell `renv`
+# to install packages in the correct location
+# and without unnecessary symlinks
+ENV RENV_CONFIG_CACHE_SYMLINKS FALSE
+ENV RENV_PATHS_LIBRARY /srv/faucet/renv/library
+
 # Install linux dependencies for R packages
 RUN apt-get update && apt-get install -y \
   libssl-dev \
@@ -12,17 +18,18 @@ RUN apt-get update && apt-get install -y \
   ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-# Some environment variables to tell `renv`
-# to install packages in the correct location
-# and without unnecessary symlinks
-ENV RENV_CONFIG_CACHE_SYMLINKS FALSE
-ENV RENV_PATHS_LIBRARY /srv/faucet/renv/library
+# Copy only renv files first
+COPY renv.lock renv.lock
+COPY renv/activate.R renv/activate.R
 
-# You copy the necessary files to bootstrap `renv`
-COPY . .
+# Install renv first
+RUN Rscript -e "install.packages('renv', repos='https://cloud.r-project.org')"
 
-# You install the packages
+# install the packages
 RUN Rscript -e "renv::restore()"
+
+# copy all the necessary files to bootstrap `renv`
+COPY . .
 
 # expose the port
 EXPOSE 3838
