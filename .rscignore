@@ -1,0 +1,5 @@
+.github
+.renvignore
+.Renviron
+.rscignore
+tests
