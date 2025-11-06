@@ -3,3 +3,4 @@
 route = "/"
 workers = 1
 server_type = "Plumber"
+# app_dir = "./api" # when you want to pick the file from this directory
