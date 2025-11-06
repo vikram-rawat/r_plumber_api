@@ -2,7 +2,7 @@
 
 #* Echo back the input
 #* @serializer csv
-#* @get /echo1
+#* @get /
 function() {
   main_dt <- list()
   for (i in 1:1e3) {

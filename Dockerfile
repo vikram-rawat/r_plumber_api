@@ -31,6 +31,9 @@ RUN Rscript -e "renv::restore()"
 # copy all the necessary files to bootstrap `renv`
 COPY . .
 
+# deactivate renv for the final image
+RUN rm -f .Rprofile
+
 # expose the port
 EXPOSE 3838
 
