@@ -3,6 +3,6 @@
 route = "/"
 workers = 1
 server_type = "Plumber"
-app_dir = "./api" # when you want to pick the file from this directory
+# app_dir = "./api" # when you want to pick the file from this directory
 strategy = "rps" # Strategy for scaling based on requests per second
 max_rps = 60 # Maximum requests per second before scaling up

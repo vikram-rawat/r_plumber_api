@@ -42,3 +42,6 @@ EXPOSE 3838
 # this is not necessary. You could ignore this
 RUN chown -R faucet:faucet /srv/faucet/
 USER faucet
+
+# run the faucet server
+CMD ["router"]
