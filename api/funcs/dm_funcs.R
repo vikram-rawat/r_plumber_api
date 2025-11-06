@@ -23,7 +23,7 @@ return_aync_csv <- function() {
     .args = list(
       # Pass the function 'return_msg' object, but assign it to the name 'my_func'
       # which will be used inside the mirai expression.
-      my_func = return_msg
+      my_func = return_csv
     )
   )
 }
