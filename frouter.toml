@@ -3,4 +3,3 @@
 route = "/"
 workers = 1
 server_type = "Plumber"
-workdir = "./api"

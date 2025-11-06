@@ -23,7 +23,7 @@ COPY renv.lock renv.lock
 COPY renv/activate.R renv/activate.R
 
 # Install renv first
-RUN Rscript -e "install.packages('renv', repos='https://cloud.r-project.org')"
+RUN Rscript -e "install.packages('renv')"
 
 # install the packages
 RUN Rscript -e "renv::restore()"
