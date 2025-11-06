@@ -1,4 +1,8 @@
 return_msg <- function() {
+  return("Hello, World! I am running plumber API with mirai support.")
+}
+
+return_csv <- function() {
   main_dt <- list()
   for (i in 1:1e3) {
     main_dt[[i]] <- iris
@@ -9,7 +13,7 @@ return_msg <- function() {
   return(result)
 }
 
-return_aync_msg <- function() {
+return_aync_csv <- function() {
   mirai(
     {
       # 1. Call the function using the name 'my_func' from the .args list.
