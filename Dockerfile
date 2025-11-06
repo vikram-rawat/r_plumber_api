@@ -3,8 +3,8 @@ FROM ixpantia/faucet:r4.5
 # Some environment variables to tell `renv`
 # to install packages in the correct location
 # and without unnecessary symlinks
-ENV RENV_CONFIG_CACHE_SYMLINKS FALSE
-ENV RENV_PATHS_LIBRARY /srv/faucet/renv/library
+ENV RENV_CONFIG_CACHE_SYMLINKS=FALSE
+ENV RENV_PATHS_LIBRARY=/srv/faucet/renv/library
 
 # Install linux dependencies for R packages
 RUN apt-get update && apt-get install -y \
