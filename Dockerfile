@@ -18,6 +18,9 @@ RUN apt-get update && apt-get install -y \
   ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
+# set working directory
+WORKDIR /srv/faucet/
+
 # Copy only renv files first
 COPY renv.lock renv.lock
 COPY renv/activate.R renv/activate.R
