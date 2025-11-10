@@ -1,5 +1,5 @@
 source("dependencies.R")
-source("api/funcs/dm_funcs.R")
+source("funcs/dm_funcs.R")
 # section: ----------------------------------
 {
   daemons(1L, dispatcher = FALSE)
