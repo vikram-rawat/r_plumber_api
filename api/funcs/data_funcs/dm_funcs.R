@@ -3,13 +3,6 @@ return_msg <- function() {
 }
 
 return_csv <- function() {
-  main_dt <- list()
-  for (i in 1:1e3) {
-    main_dt[[i]] <- iris
-  }
-
-  result <- data.table::rbindlist(main_dt)
-
   return(result)
 }
 
