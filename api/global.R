@@ -10,7 +10,7 @@ sqlite_db <- sqlite_mng("data/dummy_data.db", max_retries = 3L) |>
   everywhere({
     source("dependencies.R")
     source("funcs/classes/db_class.R")
-    sqlite_db <- sqlite_mng("api/data/dummy_data.db", max_retries = 3L) |>
-      db_connect()
+    # sqlite_db <- sqlite_mng("api/data/dummy_data.db", max_retries = 3L) |>
+    #   db_connect()
   })
 }
