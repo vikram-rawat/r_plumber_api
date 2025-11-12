@@ -3,6 +3,7 @@ return_msg <- function() {
 }
 
 return_csv <- function() {
+  result <- db_get_query(sqlite_db, "SELECT * FROM iris_data")
   return(result)
 }
 

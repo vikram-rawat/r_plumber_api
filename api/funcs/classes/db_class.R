@@ -11,7 +11,7 @@ sqlite_mng <- new_class(
   ) {
     # Create environment to hold mutable store
     store_env <- new.env(parent = emptyenv())
-    store_env$db <- db
+    store_env$db <- NULL
     store_env$connection <- NULL
     store_env$is_connected <- FALSE
     store_env$max_retries <- as.integer(max_retries)
