@@ -1,21 +1,21 @@
 return_msg <- function() {
-  return("Hello, World! I am running plumber API with mirai support.")
+  return("I am running plumber API with mirai support.")
 }
 
 return_csv <- function() {
+  result <- sqlite_db |>
+    db_get_query("SELECT * FROM iris_data limit 10")
   return(result)
 }
 
 return_aync_csv <- function() {
   mirai(
     {
-      # 1. Call the function using the name 'my_func' from the .args list.
-      # 2. Make sure any dependencies (like rbindlist) are available.
+      # Call the function
       my_func()
     },
     .args = list(
-      # Pass the function 'return_msg' object, but assign it to the name 'my_func'
-      # which will be used inside the mirai expression.
+      # define all parameters here
       my_func = return_csv
     )
   )

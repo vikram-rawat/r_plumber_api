@@ -1,4 +1,6 @@
 # plumber.R
+# setwd("api")
+# getwd()
 # section: ----------------------------------
 source("global.R")
 # section: ----------------------------------
