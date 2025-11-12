@@ -1,25 +1,24 @@
 # Define the S7 class for SQLite database management
-SQLiteManager <- new_class(
-  "SQLiteManager",
+sqlite_mng <- new_class(
+  "sqlite_mng",
   properties = list(
     db_path = class_character,
-    state = class_environment, # Environment for mutable state
-    max_retries = class_integer
+    store = class_environment # Environment for mutable store
   ),
   constructor = function(
     db_path,
     max_retries = 3L
   ) {
-    # Create environment to hold mutable state
-    state_env <- new.env(parent = emptyenv())
-    state_env$connection <- NULL
-    state_env$is_connected <- FALSE
+    # Create environment to hold mutable store
+    store_env <- new.env(parent = emptyenv())
+    store_env$connection <- NULL
+    store_env$is_connected <- FALSE
+    store_env$max_retries <- as.integer(max_retries)
 
     obj <- new_object(
       S7_object(),
       db_path = db_path,
-      state = state_env,
-      max_retries = as.integer(max_retries)
+      store = store_env
     )
 
     return(obj)
@@ -29,16 +28,16 @@ SQLiteManager <- new_class(
 # Register generics
 get_connection <- new_generic("get_connection", "self")
 # Method to establish connection
-method(get_connection, SQLiteManager) <- function(self) {
-  return(self@state$connection)
+method(get_connection, sqlite_mng) <- function(self) {
+  return(self@store$connection)
 }
 
 
 # Register generics
 set_connection <- new_generic("set_connection", "self")
 # Method to establish connection
-method(set_connection, SQLiteManager) <- function(self, new_connection) {
-  self@state$connection <- new_connection
+method(set_connection, sqlite_mng) <- function(self, new_connection) {
+  self@store$connection <- new_connection
   return(invisible(self))
 }
 
@@ -46,7 +45,7 @@ method(set_connection, SQLiteManager) <- function(self, new_connection) {
 # Register generics
 db_connect <- new_generic("db_connect", "self")
 # Method to establish connection
-method(db_connect, SQLiteManager) <- function(self) {
+method(db_connect, sqlite_mng) <- function(self) {
   tryCatch(
     {
       set_connection(
@@ -58,7 +57,7 @@ method(db_connect, SQLiteManager) <- function(self) {
           adbcdrivermanager::adbc_connection_init()
       )
 
-      self@state$is_connected <- TRUE
+      self@store$is_connected <- TRUE
 
       message("Successfully connected to database: ", self@db_path)
       return(invisible(self))
@@ -69,11 +68,41 @@ method(db_connect, SQLiteManager) <- function(self) {
   )
 }
 
+# Register generics
+is_connected <- new_generic("is_connected", "self")
 # Method to check if connection is alive
-method(is_connected, SQLiteManager) <- function(self) {
-  return(self@state$is_connected)
+method(is_connected, sqlite_mng) <- function(self) {
+  if (is.null(get_connection(self))) {
+    self@store$is_connected <- FALSE
+    return(FALSE)
+  }
+
+  tryCatch(
+    {
+      # Try a simple query to check connection
+      result <- get_connection(self) |>
+        adbcdrivermanager::read_adbc("SELECT 1")
+      self@store$is_connected <- TRUE
+      return(TRUE)
+    },
+    error = function(e) {
+      self@store$is_connected <- FALSE
+      return(FALSE)
+    }
+  )
+}
+
+# Print method for better display
+method(print, sqlite_mng) <- function(self) {
+  cat("SQLiteManager\n")
+  cat("  Database:", self@db_path, "\n")
+  cat("  Connected:", self@store$is_connected, "\n")
+  cat("  Connection:", "\n")
+  print(get_connection(self))
+  invisible(self)
 }
 
 # Now you can use it:
-db <- SQLiteManager("api/data/dummy_data.db", max_retries = 3L)
+db <- sqlite_mng("api/data/dummy_data.db", max_retries = 3L)
 db_connect(db) # This modifies the connection in the environment
+is_connected(db) # Should return TRUE if connection is alive
