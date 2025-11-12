@@ -11,6 +11,7 @@ sqlite_mng <- new_class(
   ) {
     # Create environment to hold mutable store
     store_env <- new.env(parent = emptyenv())
+    store_env$db <- db
     store_env$connection <- NULL
     store_env$is_connected <- FALSE
     store_env$max_retries <- as.integer(max_retries)
@@ -24,6 +25,16 @@ sqlite_mng <- new_class(
     return(obj)
   }
 )
+
+# Print method for better display
+method(print, sqlite_mng) <- function(self) {
+  cat("SQLiteManager\n")
+  cat("  Database:", self@db_path, "\n")
+  cat("  Connected:", self@store$is_connected, "\n")
+  cat("  Connection:", "\n")
+  print(get_connection(self))
+  invisible(self)
+}
 
 # Register generics
 get_connection <- new_generic("get_connection", "self")
@@ -48,12 +59,14 @@ db_connect <- new_generic("db_connect", "self")
 method(db_connect, sqlite_mng) <- function(self) {
   tryCatch(
     {
+      self@store$db <- adbcdrivermanager::adbc_database_init(
+        adbcsqlite::adbcsqlite(),
+        uri = self@db_path
+      )
+
       set_connection(
         self,
-        adbcdrivermanager::adbc_database_init(
-          adbcsqlite::adbcsqlite(),
-          uri = self@db_path
-        ) |>
+        self@store$db |>
           adbcdrivermanager::adbc_connection_init()
       )
 
@@ -92,17 +105,125 @@ method(is_connected, sqlite_mng) <- function(self) {
   )
 }
 
-# Print method for better display
-method(print, sqlite_mng) <- function(self) {
-  cat("SQLiteManager\n")
-  cat("  Database:", self@db_path, "\n")
-  cat("  Connected:", self@store$is_connected, "\n")
-  cat("  Connection:", "\n")
-  print(get_connection(self))
+# Register generics
+reconnect <- new_generic("reconnect", "self")
+
+# Method to reconnect with retries
+method(reconnect, sqlite_mng) <- function(self) {
+  max_retries <- self@store$max_retries
+
+  for (attempt in seq_len(max_retries)) {
+    tryCatch(
+      {
+        message("Reconnection attempt ", attempt, " of ", max_retries)
+        db_connect(self)
+
+        if (is_connected(self)) {
+          message("Reconnection successful!")
+          return(invisible(self))
+        }
+      },
+      error = function(e) {
+        if (attempt < max_retries) {
+          message("Reconnection failed: ", e$message)
+          message("Waiting 1 second before retry...")
+          Sys.sleep(1)
+        } else {
+          stop(
+            "Failed to reconnect after ",
+            max_retries,
+            " attempts: ",
+            e$message
+          )
+        }
+      }
+    )
+  }
+
+  stop("Failed to reconnect after ", max_retries, " attempts")
+}
+
+# Register generics
+db_get_query <- new_generic("db_get_query", "self")
+
+# Method to execute query with automatic reconnection
+method(db_get_query, sqlite_mng) <- function(self, sql_query, ...) {
+  tryCatch(
+    {
+      # Check connection before executing
+      if (!is_connected(self)) {
+        message("Connection lost, attempting to reconnect...")
+        reconnect(self)
+      }
+
+      # Execute query
+      result <- get_connection(self) |>
+        adbcdrivermanager::read_adbc(sql_query, ...) |>
+        data.table::as.data.table()
+
+      return(result)
+    },
+    error = function(e) {
+      message("Query failed (attempt): ", e$message)
+      message("Attempting reconnection and retry...")
+
+      tryCatch(
+        {
+          reconnect(self)
+          Sys.sleep(1)
+          # Execute query
+          result <- get_connection(self) |>
+            adbcdrivermanager::read_adbc(sql_query, ...) |>
+            data.table::as.data.table()
+          return(result)
+        },
+        error = function(reconnect_error) {
+          stop("Failed to recover from error: ", reconnect_error$message)
+        }
+      )
+    }
+  )
+}
+
+# Register generic
+db_disconnect <- new_generic("db_disconnect", "self")
+
+# Method to disconnect
+method(db_disconnect, sqlite_mng) <- function(self) {
+  if (is.null(get_connection(self))) {
+    message("No active connection to disconnect")
+    return(invisible(self))
+  }
+
+  tryCatch(
+    {
+      self@store$db |> adbcdrivermanager::adbc_database_release()
+      adbcdrivermanager::adbc_connection_release(get_connection(self))
+      set_connection(self, NULL)
+      self@store$is_connected <- FALSE
+      message("Disconnected from database: ", self@db_path)
+    },
+    error = function(e) {
+      warning("Error during disconnect: ", e$message)
+      # Force cleanup even if error occurs
+      set_connection(self, NULL)
+      self@store$is_connected <- FALSE
+    }
+  )
+
   invisible(self)
 }
 
-# Now you can use it:
-db <- sqlite_mng("api/data/dummy_data.db", max_retries = 3L)
-db_connect(db) # This modifies the connection in the environment
-is_connected(db) # Should return TRUE if connection is alive
+# # Usage example:
+# db <- sqlite_mng("api/data/dummy_data.db", max_retries = 3L)
+# print(db)
+# db_connect(db)
+# get_connection(db) # Should return a valid connection object
+# is_connected(db) # Should return TRUE if connection is alive
+
+# # This will automatically reconnect if there's an issue
+# result <- db_get_query(db, "SELECT * FROM iris_data LIMIT 10")
+
+# db_disconnect(db)
+# get_connection(db) # Should return NULL after disconnect
+# print(db)
