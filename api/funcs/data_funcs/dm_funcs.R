@@ -1,9 +1,10 @@
 return_msg <- function() {
-  return("Hello, World! I am running plumber API with mirai support.")
+  return("I am running plumber API with mirai support.")
 }
 
 return_csv <- function(dbm = sqlite_db) {
-  result <- db_get_query(dbm, "SELECT * FROM iris_data limit 10")
+  result <- dbm |>
+    db_get_query("SELECT * FROM iris_data limit 10")
   return(result)
 }
 
