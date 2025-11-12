@@ -9,8 +9,14 @@ return_csv <- function() {
 }
 
 return_aync_csv <- function() {
-  mirai({
-    # Call the function
-    return_csv()
-  })
+  mirai(
+    {
+      # Call the function
+      my_func()
+    },
+    .args = list(
+      # define functions
+      my_func = return_csv
+    )
+  )
 }
