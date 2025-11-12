@@ -7,10 +7,10 @@ return_msg
 
 #* Echo back the input
 #* @serializer csv
-#* @get /echo1
+#* @get /iris
 return_csv
 
 #* Echo back the input
 #* @serializer csv
-#* @get /echo2
+#* @get /a_iris
 return_aync_csv
