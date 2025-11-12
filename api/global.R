@@ -2,15 +2,19 @@ source("dependencies.R")
 source("funcs/data_funcs/dm_funcs.R")
 source("funcs/classes/db_class.R")
 # section: ----------------------------------
-sqlite_db <- sqlite_mng("data/dummy_data.db", max_retries = 3L) |>
+sqlite_db <<- sqlite_mng("data/dummy_data.db") |>
   db_connect()
 
 {
+  # setup a daemon with required objects
   daemons(1L, dispatcher = FALSE)
-  everywhere({
+
+  # setup the global environment of the daemon
+  setup_status <- everywhere({
     source("dependencies.R")
+    source("funcs/data_funcs/dm_funcs.R")
     source("funcs/classes/db_class.R")
-    # sqlite_db <- sqlite_mng("api/data/dummy_data.db", max_retries = 3L) |>
-    #   db_connect()
+    sqlite_db <<- sqlite_mng("data/dummy_data.db") |>
+      db_connect()
   })
 }
