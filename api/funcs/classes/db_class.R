@@ -194,6 +194,9 @@ method(db_disconnect, sqlite_mng) <- function(dbm) {
 
   tryCatch(
     {
+      # Run GC to ensure any unreleased Result objects are cleaned up
+      gc(full = TRUE) # Clean up before disconnecting
+
       # first release connection
       adbcdrivermanager::adbc_connection_release(
         get_connection(dbm)
@@ -224,16 +227,17 @@ execute_query <- function(dbm, sql_query, ...) {
     adbcdrivermanager::read_adbc(sql_query, ...) |>
     data.table::as.data.table()
 }
-# # Usage example:
-db <- sqlite_mng("data/dummy_data.db", max_retries = 3L)
-print(db)
-db_connect(db)
-get_connection(db) # Should return a valid connection object
-is_connected(db) # Should return TRUE if connection is alive
 
-# This will automatically reconnect if there's an issue
-result <- db_get_query(db, "SELECT * FROM iris_data LIMIT 10")
+# # # Usage example:
+# db <- sqlite_mng("data/dummy_data.db", max_retries = 3L)
+# print(db)
+# db_connect(db)
+# get_connection(db) # Should return a valid connection object
+# is_connected(db) # Should return TRUE if connection is alive
 
-db_disconnect(db)
-get_connection(db) # Should return NULL after disconnect
-print(db)
+# # This will automatically reconnect if there's an issue
+# result <- db_get_query(db, "SELECT * FROM iris_data LIMIT 10")
+
+# db_disconnect(db)
+# get_connection(db) # Should return NULL after disconnect
+# print(db)
