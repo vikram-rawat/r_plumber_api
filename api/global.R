@@ -33,4 +33,4 @@ get_iris_data_sql <- rs_read_query(
 }
 
 # check setup status
-print(setup_status[[1]]$data)
+print(setup_status[[1]]["data"])
