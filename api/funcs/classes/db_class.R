@@ -27,53 +27,53 @@ sqlite_mng <- new_class(
 )
 
 # Print method for better display
-method(print, sqlite_mng) <- function(self) {
+method(print, sqlite_mng) <- function(x) {
   cat("SQLiteManager\n")
-  cat("  Database:", self@db_path, "\n")
-  cat("  Connected:", self@store$is_connected, "\n")
+  cat("  Database:", x@db_path, "\n")
+  cat("  Connected:", x@store$is_connected, "\n")
   cat("  Connection:", "\n")
-  print(get_connection(self))
-  invisible(self)
+  print(get_connection(x))
+  invisible(x)
 }
 
 # Register generics
-get_connection <- new_generic("get_connection", "self")
+get_connection <- new_generic("get_connection", "dbm")
 # Method to establish connection
-method(get_connection, sqlite_mng) <- function(self) {
-  return(self@store$connection)
-}
-
-
-# Register generics
-set_connection <- new_generic("set_connection", "self")
-# Method to establish connection
-method(set_connection, sqlite_mng) <- function(self, new_connection) {
-  self@store$connection <- new_connection
-  return(invisible(self))
+method(get_connection, sqlite_mng) <- function(dbm) {
+  return(dbm@store$connection)
 }
 
 
 # Register generics
-db_connect <- new_generic("db_connect", "self")
+set_connection <- new_generic("set_connection", "dbm")
 # Method to establish connection
-method(db_connect, sqlite_mng) <- function(self) {
+method(set_connection, sqlite_mng) <- function(dbm, new_connection) {
+  dbm@store$connection <- new_connection
+  return(invisible(dbm))
+}
+
+
+# Register generics
+db_connect <- new_generic("db_connect", "dbm")
+# Method to establish connection
+method(db_connect, sqlite_mng) <- function(dbm) {
   tryCatch(
     {
-      self@store$db <- adbcdrivermanager::adbc_database_init(
+      dbm@store$db <- adbcdrivermanager::adbc_database_init(
         adbcsqlite::adbcsqlite(),
-        uri = self@db_path
+        uri = dbm@db_path
       )
 
       set_connection(
-        self,
-        self@store$db |>
+        dbm,
+        dbm@store$db |>
           adbcdrivermanager::adbc_connection_init()
       )
 
-      self@store$is_connected <- TRUE
+      dbm@store$is_connected <- TRUE
 
-      message("Successfully connected to database: ", self@db_path)
-      return(invisible(self))
+      message("Successfully connected to database: ", dbm@db_path)
+      return(invisible(dbm))
     },
     error = function(e) {
       stop("Failed to connect to database: ", e$message)
@@ -82,45 +82,45 @@ method(db_connect, sqlite_mng) <- function(self) {
 }
 
 # Register generics
-is_connected <- new_generic("is_connected", "self")
+is_connected <- new_generic("is_connected", "dbm")
 # Method to check if connection is alive
-method(is_connected, sqlite_mng) <- function(self) {
-  if (is.null(get_connection(self))) {
-    self@store$is_connected <- FALSE
+method(is_connected, sqlite_mng) <- function(dbm) {
+  if (is.null(get_connection(dbm))) {
+    dbm@store$is_connected <- FALSE
     return(FALSE)
   }
 
   tryCatch(
     {
       # Try a simple query to check connection
-      result <- get_connection(self) |>
+      result <- get_connection(dbm) |>
         adbcdrivermanager::read_adbc("SELECT 1")
-      self@store$is_connected <- TRUE
+      dbm@store$is_connected <- TRUE
       return(TRUE)
     },
     error = function(e) {
-      self@store$is_connected <- FALSE
+      dbm@store$is_connected <- FALSE
       return(FALSE)
     }
   )
 }
 
 # Register generics
-reconnect <- new_generic("reconnect", "self")
+reconnect <- new_generic("reconnect", "dbm")
 
 # Method to reconnect with retries
-method(reconnect, sqlite_mng) <- function(self) {
-  max_retries <- self@store$max_retries
+method(reconnect, sqlite_mng) <- function(dbm) {
+  max_retries <- dbm@store$max_retries
 
   for (attempt in seq_len(max_retries)) {
     tryCatch(
       {
         message("Reconnection attempt ", attempt, " of ", max_retries)
-        db_connect(self)
+        db_connect(dbm)
 
-        if (is_connected(self)) {
+        if (is_connected(dbm)) {
           message("Reconnection successful!")
-          return(invisible(self))
+          return(invisible(dbm))
         }
       },
       error = function(e) {
@@ -144,22 +144,20 @@ method(reconnect, sqlite_mng) <- function(self) {
 }
 
 # Register generics
-db_get_query <- new_generic("db_get_query", "self")
+db_get_query <- new_generic("db_get_query", "dbm")
 
 # Method to execute query with automatic reconnection
-method(db_get_query, sqlite_mng) <- function(self, sql_query, ...) {
+method(db_get_query, sqlite_mng) <- function(dbm, sql_query, ...) {
   tryCatch(
     {
       # Check connection before executing
-      if (!is_connected(self)) {
+      if (!is_connected(dbm)) {
         message("Connection lost, attempting to reconnect...")
-        reconnect(self)
+        reconnect(dbm)
       }
 
       # Execute query
-      result <- get_connection(self) |>
-        adbcdrivermanager::read_adbc(sql_query, ...) |>
-        data.table::as.data.table()
+      result <- execute_query(dbm, sql_query, ...)
 
       return(result)
     },
@@ -169,12 +167,11 @@ method(db_get_query, sqlite_mng) <- function(self, sql_query, ...) {
 
       tryCatch(
         {
-          reconnect(self)
+          reconnect(dbm)
           Sys.sleep(1)
           # Execute query
-          result <- get_connection(self) |>
-            adbcdrivermanager::read_adbc(sql_query, ...) |>
-            data.table::as.data.table()
+          result <- execute_query(dbm, sql_query, ...)
+
           return(result)
         },
         error = function(reconnect_error) {
@@ -186,44 +183,57 @@ method(db_get_query, sqlite_mng) <- function(self, sql_query, ...) {
 }
 
 # Register generic
-db_disconnect <- new_generic("db_disconnect", "self")
+db_disconnect <- new_generic("db_disconnect", "dbm")
 
 # Method to disconnect
-method(db_disconnect, sqlite_mng) <- function(self) {
-  if (is.null(get_connection(self))) {
+method(db_disconnect, sqlite_mng) <- function(dbm) {
+  if (is.null(get_connection(dbm))) {
     message("No active connection to disconnect")
-    return(invisible(self))
+    return(invisible(dbm))
   }
 
   tryCatch(
     {
-      self@store$db |> adbcdrivermanager::adbc_database_release()
-      adbcdrivermanager::adbc_connection_release(get_connection(self))
-      set_connection(self, NULL)
-      self@store$is_connected <- FALSE
-      message("Disconnected from database: ", self@db_path)
+      # first release connection
+      adbcdrivermanager::adbc_connection_release(
+        get_connection(dbm)
+      )
+
+      # then release database
+      dbm@store$db |>
+        adbcdrivermanager::adbc_database_release()
+
+      set_connection(dbm, NULL)
+      dbm@store$is_connected <- FALSE
+      message("Disconnected from database: ", dbm@db_path)
     },
     error = function(e) {
       warning("Error during disconnect: ", e$message)
       # Force cleanup even if error occurs
-      set_connection(self, NULL)
-      self@store$is_connected <- FALSE
+      set_connection(dbm, NULL)
+      dbm@store$is_connected <- FALSE
     }
   )
 
-  invisible(self)
+  invisible(dbm)
 }
 
+# Helper function for query execution
+execute_query <- function(dbm, sql_query, ...) {
+  get_connection(dbm) |>
+    adbcdrivermanager::read_adbc(sql_query, ...) |>
+    data.table::as.data.table()
+}
 # # Usage example:
-# db <- sqlite_mng("api/data/dummy_data.db", max_retries = 3L)
-# print(db)
-# db_connect(db)
-# get_connection(db) # Should return a valid connection object
-# is_connected(db) # Should return TRUE if connection is alive
+db <- sqlite_mng("data/dummy_data.db", max_retries = 3L)
+print(db)
+db_connect(db)
+get_connection(db) # Should return a valid connection object
+is_connected(db) # Should return TRUE if connection is alive
 
-# # This will automatically reconnect if there's an issue
-# result <- db_get_query(db, "SELECT * FROM iris_data LIMIT 10")
+# This will automatically reconnect if there's an issue
+result <- db_get_query(db, "SELECT * FROM iris_data LIMIT 10")
 
-# db_disconnect(db)
-# get_connection(db) # Should return NULL after disconnect
-# print(db)
+db_disconnect(db)
+get_connection(db) # Should return NULL after disconnect
+print(db)

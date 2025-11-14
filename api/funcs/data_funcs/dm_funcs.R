@@ -3,8 +3,12 @@ return_msg <- function() {
 }
 
 return_csv <- function() {
-  result <- sqlite_db |>
-    db_get_query("SELECT * FROM iris_data limit 10")
+  result <- get_iris_data_sql |>
+    rs_execute(
+      stmt_arg_name = "sql_query",
+      dbm = sqlite_db
+    )
+
   return(result)
 }
 
